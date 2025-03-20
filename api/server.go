@@ -12,7 +12,6 @@ import (
 type GenerateLicenseRequest struct {
 	MachineID string   `json:"machine_id"`
 	AppID     string   `json:"app_id"`
-	SecretKey string   `json:"secret_key"`
 	Days      int      `json:"days"`
 	Features  []string `json:"features,omitempty"`
 }
@@ -38,24 +37,12 @@ func HandleGenerateLicense(w http.ResponseWriter, r *http.Request) {
 		sendError(w, "Machine ID is required", http.StatusBadRequest)
 		return
 	}
-	if req.SecretKey == "" {
-		sendError(w, "Secret key is required", http.StatusBadRequest)
-		return
-	}
-	if req.Days <= 0 {
-		sendError(w, "Days must be positive", http.StatusBadRequest)
-		return
-	}
-
-	// Validate app ID
 	if req.AppID == "" {
 		sendError(w, "App ID is required", http.StatusBadRequest)
 		return
 	}
-
-	// Verify secret key
-	if req.SecretKey != string(license.SecretKey) {
-		sendError(w, "Invalid secret key", http.StatusUnauthorized)
+	if req.Days <= 0 {
+		sendError(w, "Days must be positive", http.StatusBadRequest)
 		return
 	}
 
