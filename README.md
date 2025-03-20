@@ -62,16 +62,16 @@ go run cmd/machine/id/main.go
 go run cmd/license/generate/main.go --show-id
 
 # 为当前机器生成一个有效期为30天的License
-go run cmd/license/generate/main.go --days 30 --out ./license.dat
+go run cmd/license/generate/main.go --days 30 --app "app-123" --out ./license.dat
 
 # 为指定机器ID生成License
-go run cmd/license/generate/main.go --machine "your-machine-id" --days 365 --out ./license.dat
+go run cmd/license/generate/main.go --machine "your-machine-id" --app "app-123" --days 365 --out ./license.dat
 
 # 为容器环境生成License
-go run cmd/license/generate/main.go --container --days 30 --out ./license.dat
+go run cmd/license/generate/main.go --container --app "app-123" --days 30 --out ./license.dat
 
 # 指定功能列表
-go run cmd/license/generate/main.go --features "feature1,feature2,feature3" --days 30 --out ./license.dat
+go run cmd/license/generate/main.go --features "feature1,feature2,feature3" --app "app-123" --days 30 --out ./license.dat
 ```
 
 
@@ -80,11 +80,38 @@ go run cmd/license/generate/main.go --features "feature1,feature2,feature3" --da
 
 ```bash
 # 验证许可证
-go run cmd/license/verify/main.go --license ./license.dat --timestamp ./timestamp.dat
+go run cmd/license/verify/main.go --license ./license.dat --app "app-123" --timestamp ./timestamp.dat
 
 # 在容器环境中验证许可证
-go run cmd/license/verify/main.go --container --license ./license.dat --timestamp ./timestamp.dat
+go run cmd/license/verify/main.go --container --license ./license.dat --app "app-123" --timestamp ./timestamp.dat
 ```
+
+
+
+### 运行服务器
+
+```bash
+# 查看当前机器的ID
+go run cmd/api/main.go --port 8080
+```
+
+#### 请求API
+
+```bash
+curl --location --request POST 'http://localhost:8080/api/license/generate' \
+--header 'Content-Type: application/json' \
+--data-raw '{    
+    "secret_key":"0aea8a18b07463ad5f5e3318db20d527c912c4ab9e7be28e94e8f486263a86fd/CF/WESCHAN",
+    "machine_id":"0aea8a18b07463ad5f5e3318db20d527c912c4ab9e7be28e94e8f486263a86fd",
+    "app_id": "metal-mes",
+    "days":365,
+    "features":[]
+}'
+```
+
+
+
+
 
 
 
@@ -198,6 +225,50 @@ GOOS=darwin GOARCH=amd64 go build -o license-verifier-mac cmd/license/verify/mai
 ```
 
 注意：在分发可执行文件时，请确保在所有安装中保持相同的密钥（许可证包中的‘ SecretKey ’），以确保许可证验证正常工作。
+
+
+
+
+
+## 运行服务器
+
+
+
+### 生成服务器
+
+```bash
+# 在 Windows 命令行 (CMD) 中
+set GOARCH=amd64
+set GOOS=windows
+go build -o machine-id.exe cmd/machine/id/main.go
+go build -o license-verifier.exe cmd/license/verify/main.go
+go build -o license-generator.exe cmd/license/generate/main.go
+
+go build -o license-api.exe api/server.go
+
+
+# 编译项目
+go build -o license-api.exe api/server.go
+
+# 调用API
+license-api.exe --port 8080
+```
+
+
+
+### 调用
+
+```bash
+curl -X POST http://localhost:8080/api/license/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "machine_id": "your-machine-id",
+    "secret_key": "your-secret-key-for-license-signature",
+    "days": 30,
+    "features": ["feature1", "feature2"]
+  }' \
+  --output license.dat
+```
 
 
 

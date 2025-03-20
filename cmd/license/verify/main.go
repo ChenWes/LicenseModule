@@ -18,6 +18,7 @@ func main() {
 	licFile := flag.String("license", license.DefaultLicenseFile, "License file path")
 	timeFile := flag.String("timestamp", license.TimeStampFile, "Timestamp file path")
 	container := flag.Bool("container", false, "Whether running in container environment")
+	appID := flag.String("app", "", "Application ID")
 	flag.Parse()
 
 	// Configure logging
@@ -48,7 +49,7 @@ func main() {
 
 	// Perform verification
 	log.Printf("Starting license verification...")
-	err = license.VerifyAndUpdate(licFilePath, timeFilePath, machineID)
+	err = license.VerifyAndUpdate(licFilePath, timeFilePath, machineID, *appID)
 	if err != nil {
 		log.Fatalf("License verification failed: %v", err)
 	}
@@ -62,6 +63,7 @@ func main() {
 	log.Printf("License verification successful!")
 	log.Printf("License details:")
 	log.Printf("  Machine ID: %s", lic.MachineID)
+	log.Printf("  App ID: %s", lic.AppID)
 	log.Printf("  Expiry Date: %s", lic.ExpiryDate.Format("2006-01-02 15:04:05"))
 	log.Printf("  Features: %v", lic.Features)
 	log.Printf("  Creation Date: %s", lic.CreationDate.Format("2006-01-02 15:04:05"))
@@ -75,4 +77,4 @@ func getMachineID(isContainer bool) (string, error) {
 		return utils.GetContainerizedMachineID()
 	}
 	return utils.GetMachineID()
-} 
+}

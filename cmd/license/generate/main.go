@@ -17,6 +17,7 @@ import (
 func main() {
 	// Define command line parameters
 	machineID := flag.String("machine", "", "Machine ID (if empty, will use current machine's ID)")
+	appID := flag.String("app", "", "Application ID")
 	days := flag.Int("days", 30, "License validity period (days)")
 	outFile := flag.String("out", license.DefaultLicenseFile, "Output file path")
 	container := flag.Bool("container", false, "Whether to generate license for container environment")
@@ -60,7 +61,7 @@ func main() {
 	}
 
 	// Create License
-	lic, err := license.NewLicense(id, *days, featureList)
+	lic, err := license.NewLicense(id, *appID, *days, featureList)
 	if err != nil {
 		log.Fatalf("Failed to create license: %v", err)
 	}
@@ -68,6 +69,7 @@ func main() {
 	// Display License information
 	log.Printf("License created:")
 	log.Printf("  Machine ID: %s", lic.MachineID)
+	log.Printf("  App ID: %s", lic.AppID)
 	log.Printf("  Expiry Date: %s", lic.ExpiryDate.Format(time.RFC3339))
 	log.Printf("  Features: %v", lic.Features)
 	log.Printf("  Creation Date: %s", lic.CreationDate.Format(time.RFC3339))
@@ -78,7 +80,7 @@ func main() {
 		log.Printf("Warning: Cannot get absolute path: %v", err)
 		absPath = *outFile
 	}
-	
+
 	// Ensure directory exists
 	dir := filepath.Dir(absPath)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
@@ -86,7 +88,7 @@ func main() {
 			log.Printf("Warning: Cannot create directory: %v", err)
 		}
 	}
-	
+
 	if err := lic.Save(*outFile); err != nil {
 		log.Fatalf("Failed to save license: %v", err)
 	}
@@ -104,4 +106,4 @@ func getMachineID(isContainer bool) (string, error) {
 		return utils.GetContainerizedMachineID()
 	}
 	return utils.GetMachineID()
-} 
+}

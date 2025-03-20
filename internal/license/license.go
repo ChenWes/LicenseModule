@@ -19,18 +19,19 @@ const (
 
 var (
 	// Secret key used for signature verification, should be properly secured in production
-	SecretKey = []byte("your-secret-key-for-license-signature")
+	SecretKey = []byte("0aea8a18b07463ad5f5e3318db20d527c912c4ab9e7be28e94e8f486263a86fd/CF/WESCHAN")
 
 	ErrInvalidLicense        = errors.New("invalid license")
 	ErrExpiredLicense        = errors.New("license has expired")
 	ErrInvalidSignature      = errors.New("invalid license signature")
 	ErrSystemTimeManipulated = errors.New("system time has been manipulated")
-	ErrMachineMismatch      = errors.New("license does not match current machine")
+	ErrMachineMismatch       = errors.New("license does not match current machine")
 )
 
 // License represents a software license
 type License struct {
 	MachineID    string    `json:"machine_id"`    // Unique machine identifier
+	AppID        string    `json:"app_id"`        // Application identifier
 	ExpiryDate   time.Time `json:"expiry_date"`   // Expiration time
 	Features     []string  `json:"features"`      // Optional feature list
 	Signature    string    `json:"signature"`     // Digital signature
@@ -43,9 +44,12 @@ type TimestampRecord struct {
 }
 
 // NewLicense creates a new license
-func NewLicense(machineID string, expiryDays int, features []string) (*License, error) {
+func NewLicense(machineID string, appID string, expiryDays int, features []string) (*License, error) {
 	if machineID == "" {
 		return nil, errors.New("machine ID cannot be empty")
+	}
+	if appID == "" {
+		return nil, errors.New("app ID cannot be empty")
 	}
 
 	now := time.Now()
@@ -53,6 +57,7 @@ func NewLicense(machineID string, expiryDays int, features []string) (*License, 
 
 	license := &License{
 		MachineID:    machineID,
+		AppID:        appID,
 		ExpiryDate:   expiryDate,
 		Features:     features,
 		CreationDate: now,
@@ -83,10 +88,15 @@ func (l *License) Sign() error {
 }
 
 // Verify checks if the license is valid
-func (l *License) Verify(currentMachineID string) error {
+func (l *License) Verify(currentMachineID string, appID string) error {
 	// Verify machine ID
 	if l.MachineID != currentMachineID {
 		return ErrMachineMismatch
+	}
+
+	// Verify app ID
+	if l.AppID != appID {
+		return errors.New("license does not match application ID")
 	}
 
 	// Verify expiration time
@@ -201,7 +211,7 @@ func CheckTimestamp(filePath string) error {
 }
 
 // VerifyAndUpdate verifies the license and updates the timestamp
-func VerifyAndUpdate(licenseFilePath, timestampFilePath, currentMachineID string) error {
+func VerifyAndUpdate(licenseFilePath, timestampFilePath, currentMachineID, appID string) error {
 	// Check if system time has been manipulated
 	if err := CheckTimestamp(timestampFilePath); err != nil {
 		return fmt.Errorf("timestamp check failed: %w", err)
@@ -214,9 +224,9 @@ func VerifyAndUpdate(licenseFilePath, timestampFilePath, currentMachineID string
 	}
 
 	// Verify license
-	if err := license.Verify(currentMachineID); err != nil {
+	if err := license.Verify(currentMachineID, appID); err != nil {
 		return fmt.Errorf("license verification failed: %w", err)
 	}
 
 	return nil
-} 
+}
