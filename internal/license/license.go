@@ -89,6 +89,9 @@ func (l *License) Sign() error {
 
 // Verify checks if the license is valid
 func (l *License) Verify(currentMachineID string, appID string) error {
+	// Get current time
+	now := time.Now()
+
 	// Verify machine ID
 	if l.MachineID != currentMachineID {
 		return ErrMachineMismatch
@@ -99,8 +102,13 @@ func (l *License) Verify(currentMachineID string, appID string) error {
 		return errors.New("license does not match application ID")
 	}
 
+	// Verify system time is not earlier than license creation time
+	if now.Before(l.CreationDate) {
+		return errors.New("system time is earlier than license creation time - possible time manipulation detected")
+	}
+
 	// Verify expiration time
-	if time.Now().After(l.ExpiryDate) {
+	if now.After(l.ExpiryDate) {
 		return ErrExpiredLicense
 	}
 
