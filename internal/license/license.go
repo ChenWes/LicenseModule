@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -26,6 +27,7 @@ var (
 	ErrInvalidSignature      = errors.New("invalid license signature")
 	ErrSystemTimeManipulated = errors.New("system time has been manipulated")
 	ErrMachineMismatch       = errors.New("license does not match current machine")
+	ErrTimeZoneManipulated   = errors.New("timezone has been changed since license creation")
 )
 
 // License represents a software license
@@ -36,6 +38,7 @@ type License struct {
 	Features     []string  `json:"features"`      // Optional feature list
 	Signature    string    `json:"signature"`     // Digital signature
 	CreationDate time.Time `json:"creation_date"` // Creation time
+	TimeZone     string    `json:"time_zone"`     // Time zone when license was created
 }
 
 // TimestampRecord used to prevent system time manipulation
@@ -52,7 +55,8 @@ func NewLicense(machineID string, appID string, expiryDays int, features []strin
 		return nil, errors.New("app ID cannot be empty")
 	}
 
-	now := time.Now()
+	// Always use UTC time for consistency
+	now := time.Now().UTC()
 	expiryDate := now.AddDate(0, 0, expiryDays)
 
 	license := &License{
@@ -61,6 +65,7 @@ func NewLicense(machineID string, appID string, expiryDays int, features []strin
 		ExpiryDate:   expiryDate,
 		Features:     features,
 		CreationDate: now,
+		TimeZone:     time.Now().Location().String(), // Store the timezone when license was created
 	}
 
 	// Generate signature
@@ -89,8 +94,8 @@ func (l *License) Sign() error {
 
 // Verify checks if the license is valid
 func (l *License) Verify(currentMachineID string, appID string) error {
-	// Get current time
-	now := time.Now()
+	// Get current time in UTC
+	now := time.Now().UTC()
 
 	// Verify machine ID
 	if l.MachineID != currentMachineID {
@@ -102,14 +107,34 @@ func (l *License) Verify(currentMachineID string, appID string) error {
 		return errors.New("license does not match application ID")
 	}
 
+	// Load the original timezone
+	originalLoc, err := time.LoadLocation(l.TimeZone)
+	if err != nil {
+		return fmt.Errorf("invalid timezone in license: %w", err)
+	}
+
+	// Get current time in original timezone
+	nowInOriginalTZ := time.Now().In(originalLoc)
+
 	// Verify system time is not earlier than license creation time
-	if now.Before(l.CreationDate) {
+	if nowInOriginalTZ.Before(l.CreationDate) {
 		return errors.New("system time is earlier than license creation time - possible time manipulation detected")
 	}
 
+	// Convert expiry date to UTC for comparison
+	expiryUTC := l.ExpiryDate.UTC()
+
 	// Verify expiration time
-	if now.After(l.ExpiryDate) {
+	if now.After(expiryUTC) {
 		return ErrExpiredLicense
+	}
+
+	// Check for suspicious timezone changes
+	currentTZ := time.Now().Location().String()
+	if currentTZ != l.TimeZone {
+		// Log the timezone change but don't fail validation
+		log.Printf("Warning: Current timezone (%s) differs from license creation timezone (%s)",
+			currentTZ, l.TimeZone)
 	}
 
 	// Verify signature
