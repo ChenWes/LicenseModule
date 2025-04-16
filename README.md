@@ -65,7 +65,7 @@ go run cmd/license/generate/main.go --show-id
 go run cmd/license/generate/main.go --days 30 --app "app-123" --out ./license.dat
 
 # 为指定机器ID生成License
-go run cmd/license/generate/main.go --machine "your-machine-id" --app "app-123" --days 365 --out ./license.dat
+go run cmd/license/generate/main.go --machine "your-machine-id" --app "app-123" --days 30 --out ./license.dat
 
 # 为容器环境生成License
 go run cmd/license/generate/main.go --container --app "app-123" --days 30 --out ./license.dat
@@ -158,7 +158,7 @@ func main() {
 
 要构建可以在其他机器上分发和运行的独立可执行文件，使用以下命令：
 
-### 1. Machine ID Generator (For Clients)
+### 1、机器ID生成（客户端）
 ```bash
 # For Linux
 GOOS=linux GOARCH=amd64 go build -o license-generator-linux cmd/machine/id/main.go
@@ -166,6 +166,8 @@ GOOS=linux GOARCH=amd64 go build -o license-generator-linux cmd/machine/id/main.
 # For Windows
 GOOS=windows GOARCH=amd64 go build -o machine-id.exe cmd/machine/id/main.go
 go build -o machine-id.exe cmd/machine/id/main.go
+# 运行
+machine-id.exe
 
 # For macOS
 GOOS=darwin GOARCH=amd64 go build -o license-generator-mac cmd/machine/id/main.go
@@ -174,7 +176,7 @@ GOOS=darwin GOARCH=amd64 go build -o license-generator-mac cmd/machine/id/main.g
 machine-id.exe [--container]
 ```
 
-### For License Generator
+### 2、License生成
 
 ```bash
 # For the current platform
@@ -186,12 +188,16 @@ GOOS=linux GOARCH=amd64 go build -o license-generator-linux cmd/license/generate
 # For Windows
 GOOS=windows GOARCH=amd64 go build -o license-generator.exe cmd/license/generate/main.go
 go build -o license-generator.exe cmd/license/generate/main.go
+# 运行
+license-generator.exe --machine "your-machine-id" --app "app-123" --days 365 --out ./license.dat
+
+license-generator.exe --machine "0aea8a18b07463ad5f5e3318db20d527c912c4ab9e7be28e94e8f486263a86fd" --app "metal-mes" --days 30 --out ./license1.dat
 
 # For macOS
 GOOS=darwin GOARCH=amd64 go build -o license-generator-mac cmd/license/generate/main.go
 ```
 
-### For License Verifier
+### 3、License验证
 
 ```bash
 # For the current platform
@@ -203,12 +209,58 @@ GOOS=linux GOARCH=amd64 go build -o license-verifier-linux cmd/license/verify/ma
 # For Windows
 GOOS=windows GOARCH=amd64 go build -o license-verifier.exe cmd/license/verify/main.go
 go build -o license-verifier.exe cmd/license/verify/main.go
+# 运行验证
+license-verifier.exe --license ./license.dat --app "metal-mes" --timestamp ./timestamp.dat
+
+go build -o liblicense.so -buildmode=c-shared cmd/license/verify/main.go
+go build-o libadd.so -buildmode=c-shared main.go
 
 # For macOS
 GOOS=darwin GOARCH=amd64 go build -o license-verifier-mac cmd/license/verify/main.go
 ```
 
 编译后的可执行文件可以复制到具有相同操作系统和体系结构的其他机器上并在其上运行。请注意，在运行可执行文件时仍将执行机器ID验证。
+
+```bash
+# For Windows (DLL)
+go build -o liblicense.dll -buildmode=c-shared cmd/shared/main.go
+
+# For Linux (SO)
+go build -o liblicense.so -buildmode=c-shared cmd/shared/main.go
+
+# For macOS (DYLIB)
+go build -o liblicense.dylib -buildmode=c-shared cmd/shared/main.go
+```
+
+
+
+
+
+### API Server
+
+```bash
+# 查看当前机器的ID
+go run cmd/api/main.go --port 8080
+
+# For the current platform
+go build -o license-api.exe cmd/api/main.go
+
+# For Linux
+GOOS=linux GOARCH=amd64 go build -o license-api-linux cmd/api/main.go
+
+# For Windows
+GOOS=windows GOARCH=amd64 go build -o license-verifier.exe cmd/api/main.go
+go build -o license-api.exe cmd/api/main.go
+# 运行API服务
+license-api.exe --port 8080
+
+# For macOS
+GOOS=darwin GOARCH=amd64 go build -o license-api-mac cmd/api/main.go
+```
+
+
+
+
 
 
 
