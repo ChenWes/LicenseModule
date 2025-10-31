@@ -161,7 +161,16 @@ func main() {
 ### 1、机器ID生成（客户端）
 ```bash
 # For Linux
-GOOS=linux GOARCH=amd64 go build -o license-generator-linux cmd/machine/id/main.go
+GOOS=linux GOARCH=amd64 go build -o license-generator-machine-id-linux cmd/machine/id/main.go
+./license-generator-machine-id-linux
+
+# -----------------------------------------------------------------------------
+# 命令行返回
+root@k3s-master1:~/LicenseModule# GOOS=linux GOARCH=amd64 go build -o license-generator-machine-id-linux cmd/machine/id/main.go
+root@k3s-master1:~/LicenseModule# ./license-generator-machine-id-linux
+Current machine ID: 6575b5a8e7eb22b1794cf22dae609ffff30cf7da3235dcfbf26f3033091a49e6
+
+
 
 # For Windows
 GOOS=windows GOARCH=amd64 go build -o machine-id.exe cmd/machine/id/main.go
@@ -176,6 +185,8 @@ GOOS=darwin GOARCH=amd64 go build -o license-generator-mac cmd/machine/id/main.g
 machine-id.exe [--container]
 ```
 
+
+
 ### 2、License生成
 
 ```bash
@@ -184,7 +195,36 @@ go build -o license-generator cmd/license/generate/main.go
 
 # For Linux
 GOOS=linux GOARCH=amd64 go build -o license-generator-linux cmd/license/generate/main.go
+./license-generator-linux --machine "6575b5a8e7eb22b1794cf22dae609ffff30cf7da3235dcfbf26f3033091a49e6" --app "app-123" --days 365 --out ./license.dat
 
+# -----------------------------------------------------------------------------
+# 命令返回
+root@k3s-master1:~/LicenseModule# GOOS=linux GOARCH=amd64 go build -o license-generator-linux cmd/license/generate/main.go
+root@k3s-master1:~/LicenseModule# ./license-generator-linux --machine "6575b5a8e7eb22b1794cf22dae609ffff30cf7da3235dcfbf26f3033091a49e6" --app "app-123" --days 365 --out ./license.dat
+[LicenseGenerator] 2025/10/31 07:48:30 Using provided machine ID: 6575b5a8e7eb22b1794cf22dae609ffff30cf7da3235dcfbf26f3033091a49e6
+[LicenseGenerator] 2025/10/31 07:48:30 License created:
+[LicenseGenerator] 2025/10/31 07:48:30   Machine ID: 6575b5a8e7eb22b1794cf22dae609ffff30cf7da3235dcfbf26f3033091a49e6
+[LicenseGenerator] 2025/10/31 07:48:30   App ID: app-123
+[LicenseGenerator] 2025/10/31 07:48:30   Expiry Date: 2026-10-31T07:48:30Z
+[LicenseGenerator] 2025/10/31 07:48:30   Features: []
+[LicenseGenerator] 2025/10/31 07:48:30   Creation Date: 2025-10-31T07:48:30Z
+[LicenseGenerator] 2025/10/31 07:48:30 License saved to: /root/LicenseModule/license.dat
+
+License JSON:
+{
+  "machine_id": "6575b5a8e7eb22b1794cf22dae609ffff30cf7da3235dcfbf26f3033091a49e6",
+  "app_id": "app-123",
+  "expiry_date": "2026-10-31T07:48:30.98070838Z",
+  "features": null,
+  "signature": "580kmK/g2ayVOnL/6OQhqE2pi2VVPDoPmTdwpjNkRvI=",
+  "creation_date": "2025-10-31T07:48:30.98070838Z",
+  "time_zone": "Local"
+}
+
+
+
+
+ 
 # For Windows
 GOOS=windows GOARCH=amd64 go build -o license-generator.exe cmd/license/generate/main.go
 go build -o license-generator.exe cmd/license/generate/main.go
@@ -197,6 +237,8 @@ license-generator.exe --machine "0aea8a18b07463ad5f5e3318db20d527c912c4ab9e7be28
 GOOS=darwin GOARCH=amd64 go build -o license-generator-mac cmd/license/generate/main.go
 ```
 
+
+
 ### 3、License验证
 
 ```bash
@@ -205,6 +247,27 @@ go build -o license-verifier cmd/license/verify/main.go
 
 # For Linux
 GOOS=linux GOARCH=amd64 go build -o license-verifier-linux cmd/license/verify/main.go
+./license-verifier-linux --license ./license.dat --app "app-123" --timestamp ./timestamp.dat
+
+# -----------------------------------------------------------------------------
+# 命令行返回
+root@k3s-master1:~/LicenseModule# GOOS=linux GOARCH=amd64 go build -o license-verifier-linux cmd/license/verify/main.go
+root@k3s-master1:~/LicenseModule# ./license-verifier-linux --license ./license.dat --app "app-123" --timestamp ./timestamp.dat
+[LicenseVerifier] 2025/10/31 07:49:51 Current machine ID: 6575b5a8e7eb22b1794cf22dae609ffff30cf7da3235dcfbf26f3033091a49e6
+[LicenseVerifier] 2025/10/31 07:49:51 Starting license verification...
+[LicenseVerifier] 2025/10/31 07:49:51 License verification successful!
+[LicenseVerifier] 2025/10/31 07:49:51 License details:
+[LicenseVerifier] 2025/10/31 07:49:51   Machine ID: 6575b5a8e7eb22b1794cf22dae609ffff30cf7da3235dcfbf26f3033091a49e6
+[LicenseVerifier] 2025/10/31 07:49:51   App ID: app-123
+[LicenseVerifier] 2025/10/31 07:49:51   Expiry Date: 2026-10-31 07:48:30
+[LicenseVerifier] 2025/10/31 07:49:51   Features: []
+[LicenseVerifier] 2025/10/31 07:49:51   Creation Date: 2025-10-31 07:48:30
+
+Application can continue running...
+
+
+
+
 
 # For Windows
 GOOS=windows GOARCH=amd64 go build -o license-verifier.exe cmd/license/verify/main.go
@@ -247,6 +310,15 @@ go build -o license-api.exe cmd/api/main.go
 
 # For Linux
 GOOS=linux GOARCH=amd64 go build -o license-api-linux cmd/api/main.go
+
+# -----------------------------------------------------------------------------
+# 命令行返回
+root@k3s-master1:~/LicenseModule# GOOS=linux GOARCH=amd64 go build -o license-api-linux cmd/api/main.go
+root@k3s-master1:~/LicenseModule# ./license-api-linux
+[LicenseAPI] 2025/10/31 07:51:47 Starting server on port 8080...
+
+
+
 
 # For Windows
 GOOS=windows GOARCH=amd64 go build -o license-verifier.exe cmd/api/main.go
