@@ -71,6 +71,10 @@ jobs:
           # 同时构建license-generate
           GENERATE_NAME="cf-license-generate-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}"
           CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" -o "bin/${GENERATE_NAME}" cmd/license/generate/main.go
+
+          # 同时构建license-machineid
+          MACHINE_NAME="cf-license-machine-id-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}"
+          CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" -o "bin/${GENERATE_NAME}" cmd/machine/id/main.go
         else
           go build -ldflags="${LDFLAGS}" -o "bin/${BINARY_NAME}" cmd/license/verify/main.go
         fi
