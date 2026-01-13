@@ -57,36 +57,25 @@ jobs:
         VERSION="${{ steps.get_version.outputs.VERSION }}"
         BUILD_TIME=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
         GIT_COMMIT=$(git rev-parse --short HEAD)
-        BINARY_NAME="cf-license-verify-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }}"
         
-        LDFLAGS="-s -w"
-        LDFLAGS="${LDFLAGS} -X 'main.version=${VERSION}'"
-        LDFLAGS="${LDFLAGS} -X 'main.buildTime=${BUILD_TIME}'"
-        LDFLAGS="${LDFLAGS} -X 'main.gitCommit=${GIT_COMMIT}'"
+        # 定义文件名后缀
+        EXT="${{ matrix.suffix }}"
         
-        # 对于Linux构建，添加静态链接以提高兼容性
+        # 1. 构建 Verify (所有平台)
+        go build -ldflags="${LDFLAGS}" -o "bin/cf-license-verify-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}${EXT}" cmd/license/verify/main.go
+        
+        # 2. 构建 Generate 和 Machine-ID (如果你希望所有平台都有，就移出 if 块)
+        # 这里以 Linux 为例，如果你需要全平台，请去掉下面的 if 判断
         if [ "${{ matrix.goos }}" = "linux" ]; then
-          CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" -o "bin/${BINARY_NAME}" cmd/license/verify/main.go
-          
-          # 同时构建license-generate
-          GENERATE_NAME="cf-license-generate-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}"
-          CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" -o "bin/${GENERATE_NAME}" cmd/license/generate/main.go
-
-          # 同时构建license-machineid
-          MACHINE_NAME="cf-license-machine-id-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}"
-          CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" -o "bin/${GENERATE_NAME}" cmd/machine/id/main.go
-        else
-          go build -ldflags="${LDFLAGS}" -o "bin/${BINARY_NAME}" cmd/license/verify/main.go
+          CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" -o "bin/cf-license-generate-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}${EXT}" cmd/license/generate/main.go
+          CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" -o "bin/cf-license-machine-id-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}${EXT}" cmd/machine/id/main.go
         fi
-        echo "BINARY_NAME=${BINARY_NAME}" >> $GITHUB_ENV
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ env.BINARY_NAME }}
-        path: |
-          bin/${{ env.BINARY_NAME }}
-          bin/cf-license-generate-*
-          bin/cf-license-machine-id-*
+        name: cf-license-artifacts-${{ matrix.goos }}-${{ matrix.goarch }}
+        path:          
+          bin/cf-license-*          
   release:
     name: Create Release
     needs: build
