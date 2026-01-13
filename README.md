@@ -437,6 +437,21 @@ docker run -v $(pwd)/license.dat:/app/config/license.dat my-licensed-app
 
 
 
+## 编译应用
+
+
+```bash
+
+# 标识版本
+git tag -a v0.0.2 -m "Release v0.0.2"
+
+# 推送版本
+git push origin v0.0.2
+
+```
+
+
+
 ## License
 
 本项目采用 MIT License 授权。 
