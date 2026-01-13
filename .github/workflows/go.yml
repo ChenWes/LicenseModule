@@ -86,6 +86,7 @@ jobs:
         path: |
           bin/${{ env.BINARY_NAME }}
           bin/cf-license-generate-*
+          bin/cf-license-machine-id-*
   release:
     name: Create Release
     needs: build
