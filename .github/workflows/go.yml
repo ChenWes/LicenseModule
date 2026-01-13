@@ -1,0 +1,190 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # 触发条件：推送以 'v' 开头的标签，如 v1.0.0
+
+jobs:
+  build:
+    name: Build Cross Platform Binaries
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            suffix: ""
+          - goos: linux
+            goarch: arm64
+            suffix: ""
+          - goos: darwin
+            goarch: amd64
+            suffix: ""
+          - goos: darwin
+            goarch: arm64
+            suffix: ""
+          - goos: windows
+            goarch: amd64
+            suffix: ".exe"
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24'
+
+    - name: Get dependencies
+      run: |
+        go mod download
+        go mod tidy
+    - name: Extract version from tag
+      id: get_version
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+        echo "Build version: ${VERSION}"
+    - name: Build binary
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+      run: |
+        mkdir -p bin
+        VERSION="${{ steps.get_version.outputs.VERSION }}"
+        BUILD_TIME=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+        GIT_COMMIT=$(git rev-parse --short HEAD)
+        BINARY_NAME="cf-license-verify-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }}"
+        
+        LDFLAGS="-s -w"
+        LDFLAGS="${LDFLAGS} -X 'main.version=${VERSION}'"
+        LDFLAGS="${LDFLAGS} -X 'main.buildTime=${BUILD_TIME}'"
+        LDFLAGS="${LDFLAGS} -X 'main.gitCommit=${GIT_COMMIT}'"
+        
+        # 对于Linux构建，添加静态链接以提高兼容性
+        if [ "${{ matrix.goos }}" = "linux" ]; then
+          CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" -o "bin/${BINARY_NAME}" cmd/license/verify/main.go
+          
+          # 同时构建upgrade-agent
+          VERIFY_NAME="cf-license-generate-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}"
+          CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" -o "bin/${VERIFY_NAME}" cmd/license/generate/main.go
+        else
+          go build -ldflags="${LDFLAGS}" -o "bin/${BINARY_NAME}" cmd/license/verify/main.go
+        fi
+        echo "BINARY_NAME=${BINARY_NAME}" >> $GITHUB_ENV
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.BINARY_NAME }}
+        path: |
+          bin/${{ env.BINARY_NAME }}
+          bin/cf-license-generate-*
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: Extract version from tag
+      id: get_version
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+        echo "Release version: ${VERSION}"
+    - name: Prepare release assets
+      run: |
+        mkdir -p release
+        # In v4, artifacts are downloaded to subdirectories named after the artifact
+        find artifacts -name "cf-license-verify-*" -type f -exec cp {} release/ \;
+        ls -la release/
+    - name: Generate checksums
+      run: |
+        cd release
+        sha256sum * > checksums.txt
+        cat checksums.txt
+    - name: Generate Release Notes
+      id: release_notes
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.RELEASE_TOKEN }}
+        script: |
+          const { data: releases } = await github.rest.repos.listReleases({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            per_page: 1
+          });
+          
+          const previousTag = releases.length > 0 ? releases[0].tag_name : null;
+          const currentTag = '${{ steps.get_version.outputs.VERSION }}';
+          
+          let releaseNotes = '';
+          
+          if (previousTag) {
+            // 获取自动生成的 release notes
+            const { data: generatedNotes } = await github.rest.repos.generateReleaseNotes({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: currentTag,
+              previous_tag_name: previousTag
+            });
+            releaseNotes = generatedNotes.body;
+          }
+          
+          // 添加自定义内容
+          const customContent = `## Cuifeng License Module ${currentTag}
+          ### 🚀 新版本发布
+          
+          Cuifeng License Module 的 ${currentTag} 版本。
+          
+          ### 📦 下载说明
+          
+          请根据您的操作系统选择对应的二进制文件：
+          
+          - **Linux AMD64**: \`cf-license-verify-${currentTag}-linux-amd64\`
+          - **Linux ARM64**: \`cf-license-verify-${currentTag}-linux-arm64\` 
+          - **macOS Intel**: \`cf-license-verify-${currentTag}-darwin-amd64\`
+          - **macOS Apple Silicon**: \`cf-license-verify-${currentTag}-darwin-arm64\`
+          - **Windows**: \`cf-license-verify-${currentTag}-windows-amd64.exe\`
+          
+          ### 🔐 文件校验
+          
+          请使用 \`checksums.txt\` 文件验证下载文件的完整性。
+          
+          ### 📋 使用方法
+          
+          1. 下载对应平台的二进制文件
+          2. 赋予执行权限（Linux/macOS）：\`chmod +x cf-license-verify-${currentTag}-*\`
+          3. 运行：\`./cf-license-verify-${currentTag}-*\` 或 \`cf-license-verify-${currentTag}-windows-amd64.exe\`
+          
+          ### 📖 更多信息
+          
+          详细使用说明请参考项目 README.md 文件。
+          
+          ---
+          
+          ${releaseNotes}`;
+          
+          core.setOutput('body', customContent);
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.get_version.outputs.VERSION }}
+        name: Release ${{ steps.get_version.outputs.VERSION }}
+        body: ${{ steps.release_notes.outputs.body }}
+        files: |
+          release/*
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
