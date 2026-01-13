@@ -68,9 +68,9 @@ jobs:
         if [ "${{ matrix.goos }}" = "linux" ]; then
           CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" -o "bin/${BINARY_NAME}" cmd/license/verify/main.go
           
-          # 同时构建upgrade-agent
-          VERIFY_NAME="cf-license-generate-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}"
-          CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" -o "bin/${VERIFY_NAME}" cmd/license/generate/main.go
+          # 同时构建license-generate
+          GENERATE_NAME="cf-license-generate-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}"
+          CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" -o "bin/${GENERATE_NAME}" cmd/license/generate/main.go
         else
           go build -ldflags="${LDFLAGS}" -o "bin/${BINARY_NAME}" cmd/license/verify/main.go
         fi
@@ -106,7 +106,7 @@ jobs:
       run: |
         mkdir -p release
         # In v4, artifacts are downloaded to subdirectories named after the artifact
-        find artifacts -name "cf-license-verify-*" -type f -exec cp {} release/ \;
+        find artifacts -name "cf-license-*" -type f -exec cp {} release/ \;
         ls -la release/
     - name: Generate checksums
       run: |
