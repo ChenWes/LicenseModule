@@ -7,7 +7,7 @@ LABEL maintainer="WesChen(chenxuhua0530@163.com)"
 WORKDIR /app
 
 # 将二进制文件复制到当前目录
-COPY cf-license-server-v0.0.7-linux-amd64 ./cf-license-server
+COPY cf-license-server-v0.0.8-linux-amd64 ./cf-license-server
 
 # 赋予执行权限（非常重要，否则 CMD 可能会报 Permission Denied）
 RUN chmod +x ./cf-license-server
