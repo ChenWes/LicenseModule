@@ -61,15 +61,22 @@ jobs:
         # 定义文件名后缀
         EXT="${{ matrix.suffix }}"
         
-        # 为 Linux 平台设置 CGO_ENABLED=0 以支持 Alpine Linux (musl libc)
-        # 静态编译，不依赖 glibc，可以在 Alpine 上运行
-        if [ "${{ matrix.goos }}" = "linux" ]; then
+        # 定义 LDFLAGS（包含版本信息）
+        LDFLAGS="-s -w"
+        if [ -n "$VERSION" ]; then
+          LDFLAGS="$LDFLAGS -X main.version=${VERSION}"
+        fi
+        
+        # 为 Linux 和 Windows 平台设置 CGO_ENABLED=0
+        # Linux: 静态编译，不依赖 glibc，可以在 Alpine 上运行
+        # Windows: 静态编译，确保更好的兼容性
+        if [ "${{ matrix.goos }}" = "linux" ] || [ "${{ matrix.goos }}" = "windows" ]; then
           export CGO_ENABLED=0
         fi
         
         # 1. 构建 Verify (所有平台)
         go build -ldflags="${LDFLAGS}" -o "bin/cf-license-verify-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}${EXT}" cmd/license/verify/main.go
-        # 2. 构建 API 服务
+        # 2. 构建 API 服务 (所有平台)
         go build -ldflags="${LDFLAGS}" -o "bin/cf-license-server-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}${EXT}" cmd/api/main.go
         
         # 3. 构建 Generate (如果你希望所有平台都有，就移出 if 块)
