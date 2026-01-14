@@ -61,10 +61,13 @@ jobs:
         # 定义文件名后缀
         EXT="${{ matrix.suffix }}"
         
-        # 定义 LDFLAGS（包含版本信息）
+        # 定义 LDFLAGS（包含版本信息和 Git 提交信息）
         LDFLAGS="-s -w"
         if [ -n "$VERSION" ]; then
           LDFLAGS="$LDFLAGS -X main.version=${VERSION}"
+        fi
+        if [ -n "$GIT_COMMIT" ]; then
+          LDFLAGS="$LDFLAGS -X main.gitCommit=${GIT_COMMIT}"
         fi
         
         # 为 Linux 和 Windows 平台设置 CGO_ENABLED=0

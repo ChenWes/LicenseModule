@@ -10,6 +10,12 @@ import (
 	"github.com/chenwes/licensemodule/pkg/utils"
 )
 
+// 版本信息，通过 ldflags 在编译时注入
+var (
+	version   = "unknown"
+	gitCommit = "unknown"
+)
+
 // This program is used to verify the license
 
 func main() {
@@ -22,6 +28,8 @@ func main() {
 
 	// Configure logging
 	log.SetPrefix("[LicenseVerifier] ")
+
+	log.Printf("CF License Verification Service Start: Version: %s, Git Commit: %s", version, gitCommit)
 
 	// Get current machine ID
 	machineID, err := getMachineID(*container)

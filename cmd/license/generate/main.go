@@ -14,6 +14,12 @@ import (
 	"github.com/chenwes/licensemodule/pkg/utils"
 )
 
+// 版本信息，通过 ldflags 在编译时注入
+var (
+	version   = "unknown"
+	gitCommit = "unknown"
+)
+
 func main() {
 	// Define command line parameters
 	machineID := flag.String("machine", "", "Machine ID (if empty, will use current machine's ID)")
@@ -27,6 +33,8 @@ func main() {
 
 	// Configure logging
 	log.SetPrefix("[LicenseGenerator] ")
+
+	log.Printf("CF License Generation Service Start: Version: %s, Git Commit: %s", version, gitCommit)
 
 	// If only showing machine ID
 	if *showMachineID {
