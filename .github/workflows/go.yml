@@ -84,9 +84,10 @@ jobs:
         
         # 3. 构建 Generate (如果你希望所有平台都有，就移出 if 块)
         # 这里以 Linux 为例，如果你需要全平台，请去掉下面的 if 判断
-        if [ "${{ matrix.goos }}" = "linux" ]; then
-          go build -ldflags="${LDFLAGS}" -o "bin/cf-license-generate-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}${EXT}" cmd/license/generate/main.go          
-        fi
+        # 暂时不构建 Generate
+        # if [ "${{ matrix.goos }}" = "linux" ]; then
+        #  go build -ldflags="${LDFLAGS}" -o "bin/cf-license-generate-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}${EXT}" cmd/license/generate/main.go          
+        # fi
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
