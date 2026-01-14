@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -67,8 +66,6 @@ func main() {
 	log.Printf("  Expiry Date: %s", lic.ExpiryDate.Format("2006-01-02 15:04:05"))
 	log.Printf("  Features: %v", lic.Features)
 	log.Printf("  Creation Date: %s", lic.CreationDate.Format("2006-01-02 15:04:05"))
-
-	fmt.Println("\nApplication can continue running...")
 }
 
 // Get machine ID based on environment type
