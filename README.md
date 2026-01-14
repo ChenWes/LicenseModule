@@ -400,23 +400,29 @@ curl -X POST http://localhost:8080/api/license/generate \
 
 
 
-
 ## Docker环境
 
-在Docker容器中使用时，您需要：
 
-1. 使用 `--container` 参数生成适用于容器环境的License
-2. 将License文件挂载到容器中，或在构建镜像时包含它
+
+### 生成服务器
 
 示例Docker构建和运行：
 
 ```bash
-# 构建Docker镜像
-docker build -t my-licensed-app -f examples/docker/Dockerfile .
+# 编译镜像
+docker build -t registry.cn-hangzhou.aliyuncs.com/weschan/cf-license-server:20260114.1 .
 
-# 运行容器
-docker run -v $(pwd)/license.dat:/app/config/license.dat my-licensed-app
+# 运行镜像
+docker run -d -p 8080:8080 --name cf-license-server registry.cn-hangzhou.aliyuncs.com/weschan/cf-license-server:20260114.1
 ```
+
+
+
+### 验证服务
+
+> 参考网关项目：[https://github.com/ChenWes/cf-gateway](https://github.com/ChenWes/cf-gateway)
+
+
 
 
 
