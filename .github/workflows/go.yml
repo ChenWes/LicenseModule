@@ -70,7 +70,7 @@ jobs:
         # 1. 构建 Verify (所有平台)
         go build -ldflags="${LDFLAGS}" -o "bin/cf-license-verify-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}${EXT}" cmd/license/verify/main.go
         # 2. 构建 API 服务
-        go build -ldflags="${LDFLAGS}" -o "bin/cf-license-server-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}${EXT}" api/server.go
+        go build -ldflags="${LDFLAGS}" -o "bin/cf-license-server-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}${EXT}" cmd/api/main.go
         
         # 3. 构建 Generate (如果你希望所有平台都有，就移出 if 块)
         # 这里以 Linux 为例，如果你需要全平台，请去掉下面的 if 判断
