@@ -416,6 +416,14 @@ docker build -t registry.cn-hangzhou.aliyuncs.com/weschan/cf-license-server:2026
 docker run -d -p 8080:8080 --name cf-license-server registry.cn-hangzhou.aliyuncs.com/weschan/cf-license-server:20260114.1
 ```
 
+docker-compose运行
+
+```bash
+# 编译镜像
+docker-compose -f docker-compose-ce.yml up -d
+
+```
+
 
 
 ### 验证服务

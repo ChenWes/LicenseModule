@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  cf-license-server:
+    image: registry.cn-hangzhou.aliyuncs.com/weschan/cf-license-server:20260114.1
+    container_name: cf-license-server
+    restart: unless-stopped        
+    ports:
+      - "8080:8080"  # API 端口
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 512M
+        reservations:
+          cpus: '1'
+          memory: 256M    
+    # 挂载配置文件和日志目录
+    # volumes:      
+    #   # 日志目录（持久化日志）
+    #   - ./logs:/app/logs              
+    # 环境变量（可选）
+    environment:      
+      - TZ=Asia/Shanghai  # 设置时区    
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s        
+# 如果不使用 host 网络，可以定义网络
+# networks:
+#   cf-network:
+#     driver: bridge
